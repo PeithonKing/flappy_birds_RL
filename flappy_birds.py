@@ -109,8 +109,8 @@ def reward():
     print()
 
 birds = [
-    Bird(key = pygame.K_a),
-    Bird(key = pygame.K_s, colour=green)
+    Bird(key = pygame.K_SPACE),
+    # Bird(key = pygame.K_s, colour=green)
     ]
 
 birds_alive = len(birds)

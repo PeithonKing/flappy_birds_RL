@@ -1,5 +1,5 @@
 import pygame
-# import time
+import time
 from random import randint
 
 
@@ -96,6 +96,8 @@ class FlappyBird:
         # init display
         self.screen = pygame.display.set_mode((disp_x, disp_y))
         self.clock = pygame.time.Clock()
+        # various variables
+        self.last_jumped = time.time()
         self.g = g
         self.fps = 100  # frames per second
         self.damp = 0.8  # damping factor on collision with bouncing surfaces
@@ -125,13 +127,15 @@ class FlappyBird:
     def reward(self, bird, obstacle):
         return int((disp_y/4 -abs(bird.s-obstacle.gap_y)))
     
-    def play_step(self, actions, events = None):
-        # actions = [[0, 1] or [1, 0]]*len(self.birds)  # which is fortunately 1 here
+    def play_step(self, actions, threshold, t0, events = None):
+        # actions = [[0, 1] or [1, 0]]*len(self.birds)  # length which is fortunately 1 for now
         # [1, 0] = jump
         # [0, 1] = do nothing
         success = False
         # collect user input, create background and clock ticks
-        dt = self.clock.tick(100)/1000
+        dt = (time.time() - t0)
+        t0 = time.time()
+        self.clock.tick(100)
         self.screen.fill(black)
         if events == None:
             events = pygame.event.get()
@@ -139,11 +143,12 @@ class FlappyBird:
             if event.type == pygame.QUIT:
                 # pygame.quit()
                 # quit()
-                return 0, True, self.score
+                return 0, True, self.score, t0
         
         # render characters
         if self.obstacle.draw(self.screen, dt):
             self.score += 1
+            print(f"score = {self.score}")
             success = True
         for bird in self.birds:
             if bird.alive:
@@ -151,10 +156,12 @@ class FlappyBird:
         
         # jump bird if needed
         for i in range(len(self.birds)):
+            # print(actions)
             if self.birds[i].alive and actions[i][0]:
+                self.last_jumped = time.time()
                 self.birds[i].jump()
 
-        # kill bird if it hits the obstacle
+        # # kill bird if it hits the obstacle
         for bird in self.birds:
             if bird.alive:
                 collided = self.collide(bird, self.obstacle)
@@ -163,14 +170,17 @@ class FlappyBird:
                     bird.kill()
                     self.birds_alive -= 1
                     reward = -10
+        # print(threshold)
+        # pygame.draw.line(self.screen, (255, 255 , 0), (0, self.obstacle.gap_y-threshold), (self.disp_x, self.obstacle.gap_y-threshold), 2)
         
         # update the screen
         pygame.display.update()
+        reward = 0  # remove this line
         if success:
             reward = 10
         # return reward, game_over, score
         # print(reward)
-        return reward, self.birds_alive == 0, self.score
+        return reward, self.birds_alive == 0, self.score, t0
               # int      bool       int
 
 if __name__ == "__main__":
@@ -179,6 +189,7 @@ if __name__ == "__main__":
     game_over = False
     score = 0
     total_reward = 0
+    t0 = time.time()-0.01
     while not game_over:
         action = [0, 1]
         events = pygame.event.get()
@@ -188,7 +199,7 @@ if __name__ == "__main__":
                     # print("jump")
                     action = [1, 0]
                 
-        reward, game_over, new_score = game.play_step([action], events)
+        reward, game_over, new_score, t0 = game.play_step([action], t0, events)
         if score != new_score:
             print(f"score = {new_score}")
         if reward:

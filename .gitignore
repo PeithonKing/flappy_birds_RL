@@ -1,0 +1,4 @@
+# *.csv
+# *.zip
+data_for_supervised_learning
+__pycache__
